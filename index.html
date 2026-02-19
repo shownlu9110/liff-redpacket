@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>初四迎財神 抽紅包</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        :root {
+            --gold: #ffd700;
+            --red: #d63031;
+            --dark-red: #8b0000;
+        }
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: var(--dark-red); overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%; height: 100vh;
+            background: radial-gradient(circle, #e63946 0%, #8b0000 100%);
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; position: relative; z-index: 1;
+        }
+        
+        .title {
+            position: absolute; top: 50px; color: var(--gold); text-align: center;
+            font-size: 26px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 2px;
+        }
+
+        .grid-container {
+            display: grid; 
+            grid-template-columns: repeat(3, 85px); 
+            grid-template-rows: repeat(3, 115px);   
+            gap: 15px; z-index: 5;
+        }
+
+        .packet {
+            width: 85px; height: 115px; background: #ff4757;
+            border-radius: 10px; border: 2px solid var(--gold);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 30px; color: var(--gold); font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: all 0.1s; position: relative;
+        }
+
+        .active-packet {
+            transform: scale(1.1) translateY(-8px);
+            background: var(--gold); color: var(--red);
+            box-shadow: 0 0 25px var(--gold);
+            z-index: 10;
+        }
+
+        .btn-start {
+            margin-top: 40px; padding: 15px 70px; font-size: 22px;
+            background: linear-gradient(180deg, #ffd700, #f39c12);
+            color: #8b0000; border: none; border-radius: 50px;
+            font-weight: bold; cursor: pointer; z-index: 10;
+            box-shadow: 0 4px 0 #b18a00;
+        }
+
+        .yuanbao {
+            position: absolute; top: -50px; font-size: 35px;
+            animation: fall linear forwards; z-index: 20;
+        }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75); display: none;
+            flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 100;
+        }
+        .coupon-card {
+            background: #fff; color: #333; padding: 35px; border-radius: 25px;
+            text-align: center; width: 260px; animation: popIn 0.5s ease-out;
+        }
+        @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .btn-claim {
+            background: #06c755; color: white; padding: 12px 30px; 
+            text-decoration: none; border-radius: 30px; 
+            display: inline-block; margin-top: 20px; font-weight: bold;
+            border: none; cursor: pointer; font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="title">🧧 初四迎財神 🧧</div>
+    <div class="grid-container" id="grid">
+        <div class="packet">福</div><div class="packet">福</div><div class="packet">福</div>
+        <div class="packet">福</div><div class="packet">福</div><div class="packet">福</div>
+        <div class="packet">福</div><div class="packet">福</div><div class="packet">福</div>
+    </div>
+    <button class="btn-start" id="start-btn" onclick="startLottery()">開運抽獎</button>
+</div>
+
+<div id="overlay">
+    <div class="coupon-card">
+        <div style="font-size: 50px;">🎊</div>
+        <h2 style="color: var(--red); margin: 10px 0;">恭喜中獎！</h2>
+        <p>您獲得了一份財神好禮</p>
+        <h1 style="font-size: 42px; margin: 10px 0;">10元折抵券</h1>
+        <button class="btn-claim" onclick="handleClaim()">點我領取</button>
+    </div>
+</div>
+
+<script>
+    // --- LIFF 初始化 ---
+    async function initLiff() {
+        try {
+            await liff.init({ liffId: "你的LIFF_ID" }); // ⚠️ 請替換為你的實體 ID
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            }
+        } catch (err) {
+            console.error('LIFF 初始化失敗', err);
+        }
+    }
+    initLiff();
+
+    // --- 領獎邏輯：打開連結並自動關閉 ---
+    function handleClaim() {
+        // 在外部瀏覽器或 LINE 內部開啟優惠券連結
+        liff.openWindow({
+            url: "https://lin.ee/f620Cbo",
+            external: true // 設定為 true 會在外部瀏覽器開啟，方便使用者領取
+        });
+        
+        // 延遲一秒後自動關閉 LIFF 視窗
+        setTimeout(() => {
+            liff.closeWindow();
+        }, 1000);
+    }
+
+    // --- 抽獎動畫邏輯 ---
+    const packets = document.querySelectorAll('.packet');
+    let lastIndex = -1;
+
+    function startLottery() {
+        document.getElementById('start-btn').style.visibility = 'hidden';
+        let currentSpeed = 60;
+        const maxSpeed = 400;
+        const duration = 3000;
+        let startTime = Date.now();
+
+        startYuanbaoRain();
+
+        function jump() {
+            const now = Date.now();
+            const elapsed = now - startTime;
+            packets.forEach(p => p.classList.remove('active-packet'));
+
+            let randomIndex;
+            do { randomIndex = Math.floor(Math.random() * 9); } while (randomIndex === lastIndex);
+            lastIndex = randomIndex;
+            packets[randomIndex].classList.add('active-packet');
+
+            let progress = elapsed / duration;
+            currentSpeed = 60 + (maxSpeed - 60) * Math.pow(progress, 2);
+
+            if (elapsed < duration) {
+                setTimeout(jump, currentSpeed);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('overlay').style.display = 'flex';
+                }, 500);
+            }
+        }
+        jump();
+    }
+
+    function startYuanbaoRain() {
+        setInterval(() => {
+            const yb = document.createElement('div');
+            yb.innerHTML = '💰'; 
+            yb.className = 'yuanbao';
+            yb.style.left = Math.random() * 90 + 'vw';
+            yb.style.animationDuration = (Math.random() * 1.5 + 1.5) + 's';
+            document.querySelector('.app-container').appendChild(yb);
+            setTimeout(() => yb.remove(), 3000);
+        }, 150);
+    }
+</script>
+
+</body>
+</html>
